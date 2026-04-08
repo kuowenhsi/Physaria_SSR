@@ -1,0 +1,199 @@
+---
+title: "Physaria Table 1 Map Workflow"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(ggspatial)
+library(ggrepel)
+
+input_file <- "../data/Table_1.csv"
+output_png <- "../figure/Table_1_map.png"
+```
+
+## Goal
+
+This report rebuilds a publication-style map from `Table_1.csv` using the same core package stack and plotting style as the reference script:
+
+- `tidyverse`
+- `sf`
+- `rnaturalearth`
+- `rnaturalearthdata`
+- `ggspatial`
+- `ggrepel`
+
+It also exposes the intermediate objects so the map can be tuned later.
+
+## Read and Clean Table 1
+
+```{r read-clean}
+raw_lines <- readr::read_lines(input_file)
+data_lines <- raw_lines[!str_detect(raw_lines, '^"?#') & raw_lines != ""]
+
+table_1 <- readr::read_csv(I(data_lines), show_col_types = FALSE) %>%
+  rename(
+    population_code = `Population code`,
+    collector = Collector,
+    species_name = `Species name`,
+    locality = `State, County, Locality (Element Occurrence number)`,
+    ecoregion = Ecoregion,
+    lat_raw = Lat,
+    long_raw = Long,
+    n_samples = `Number of samples`
+  ) %>%
+  mutate(
+    species_name = str_replace_all(species_name, "[“”]", ""),
+    species_name = str_squish(species_name),
+    lat = readr::parse_number(as.character(lat_raw)),
+    long = readr::parse_number(as.character(long_raw)),
+    n_samples = readr::parse_number(as.character(n_samples)),
+    species_group = case_when(
+      str_detect(species_name, "globosa") ~ "P. globosa",
+      str_detect(species_name, "ouachitensis") ~ "P. ouachitensis",
+      str_detect(species_name, "filiformis") ~ "P. filiformis",
+      str_detect(species_name, "gracilis") ~ "P. gracilis",
+      TRUE ~ species_name
+    )
+  )
+
+table_1
+```
+
+## Check Coordinate Parsing
+
+This is mainly for debugging malformed coordinates from the extracted CSV. `parse_number()` is used so entries such as `36.501393, -` still resolve to usable numeric latitude values.
+
+```{r coord-check}
+table_1 %>%
+  transmute(population_code, lat_raw, long_raw, lat, long) %>%
+  filter(is.na(lat) | is.na(long) | str_detect(as.character(lat_raw), ",") | str_detect(as.character(long_raw), ",")) 
+```
+
+## Build Spatial Objects
+
+```{r spatial-objects}
+site_tbl <- table_1 %>%
+  filter(!is.na(lat), !is.na(long))
+
+site_sf <- st_as_sf(site_tbl, coords = c("long", "lat"), crs = 4326, remove = FALSE)
+site_sf_3857 <- st_transform(site_sf, 3857)
+
+label_sf <- site_tbl %>%
+  group_by(population_code, species_group) %>%
+  summarise(
+    long = mean(long),
+    lat = mean(lat),
+    n_samples = sum(n_samples),
+    .groups = "drop"
+  ) %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326) %>%
+  st_transform(3857) %>%
+  mutate(label = paste0(population_code, " (n=", n_samples, ")"))
+
+label_xy <- cbind(st_drop_geometry(label_sf), st_coordinates(label_sf))
+
+usa_state <- ne_states(country = "United States of America", returnclass = "sf") %>%
+  st_transform(3857)
+
+bbox <- st_bbox(site_sf_3857)
+x_pad <- (bbox$xmax - bbox$xmin) * 0.18
+y_pad <- (bbox$ymax - bbox$ymin) * 0.18
+
+list(
+  n_points = nrow(site_tbl),
+  bbox_3857 = bbox
+)
+```
+
+## Base Map
+
+```{r base-map, fig.width=10, fig.height=8}
+ggplot() +
+  geom_sf(data = usa_state, fill = NA, color = "gray75", linewidth = 0.3) +
+  coord_sf(
+    xlim = c(bbox$xmin - x_pad, bbox$xmax + x_pad),
+    ylim = c(bbox$ymin - y_pad, bbox$ymax + y_pad),
+    expand = FALSE,
+    crs = 3857
+  ) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+```
+
+## Add Sampling Points
+
+```{r point-map, fig.width=10, fig.height=8}
+fill_values <- c(
+  "P. globosa" = "#c44e52",
+  "P. ouachitensis" = "#4c78a8",
+  "P. filiformis" = "#55a868",
+  "P. gracilis" = "#8172b3"
+)
+
+point_map <- ggplot() +
+  geom_sf(data = usa_state, fill = NA, color = "gray75", linewidth = 0.3) +
+  geom_sf(
+    data = site_sf_3857,
+    aes(fill = species_group, size = n_samples),
+    shape = 21,
+    color = "black",
+    stroke = 0.3,
+    alpha = 0.9
+  ) +
+  scale_fill_manual(values = fill_values, drop = FALSE, name = "Species") +
+  scale_size_continuous(range = c(2.2, 5.5), name = "Sample size") +
+  coord_sf(
+    xlim = c(bbox$xmin - x_pad, bbox$xmax + x_pad),
+    ylim = c(bbox$ymin - y_pad, bbox$ymax + y_pad),
+    expand = FALSE,
+    crs = 3857
+  ) +
+  theme_bw() +
+  theme(
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    legend.box = "vertical"
+  )
+
+point_map
+```
+
+## Add Labels and Scale Bar
+
+```{r final-map, fig.width=10, fig.height=8}
+final_map <- point_map +
+  geom_text_repel(
+    data = label_xy,
+    aes(x = X, y = Y, label = label),
+    size = 3,
+    min.segment.length = 0.1,
+    seed = 42,
+    max.overlaps = 50,
+    box.padding = 0.25,
+    point.padding = 0.2,
+    segment.color = "gray40"
+  ) +
+  annotation_scale(location = "br", width_hint = 0.22) +
+  labs(x = NULL, y = NULL) +
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+  )
+
+final_map
+```
+
+## Save the Final PNG
+
+```{r save-output}
+ggsave(output_png, plot = final_map, width = 10, height = 8, dpi = 900)
+output_png
+```

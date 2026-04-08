@@ -1,0 +1,23 @@
+# Table 4. Test statistics and significance of tests for genetic bottlenecks for each population of Physaria globosa. Values indicate test statistics for each test in each population. Bolded test statistics are populations that show significant evidence (P<0.01) of a recent genetic bottleneck and asterisks show the level of significance.
+# Column definitions: Population=population identifier; Geographic area=abbreviated sampling region; Excess in heterozygosity Z-test=Z-test statistic for heterozygosity excess; Excess in heterozygosity Wilcoxon signed-rank test=Wilcoxon signed-rank statistic for heterozygosity excess; Deficiency in M-Ratio Z-test=Z-test statistic for M-ratio deficiency; Deficiency in M-Ratio Wilcoxon signed-rank test=Wilcoxon signed-rank statistic for M-ratio deficiency
+"# Note: Region codes: IN=Indiana, MO=Missouri, KY=Kentucky, TNE=eastern Tennessee / Nashville Basin, TNW=western Tennessee / Highland Rim, EX-S=ex situ populations."
+"# Note: Significance codes: *=0.01, **=0.001, ***=0.0001."
+
+Population,Geographic area,Excess in heterozygosity Z-test,Excess in heterozygosity Wilcoxon signed-rank test,Deficiency in M-Ratio Z-test,Deficiency in M-Ratio Wilcoxon signed-rank test
+Pgl346_IN,IN,0.1445,0.213,-8.8537***,-3.3373***
+Pgl347_KY,KY,1.4579,2.2286*,-5.9867***,-5.9867***
+Pgl348_EXS,EX-S,-0.435,-0.4654,-6.7781***,-3.0508***
+Pgl349_KY,KY,0.4141,0.7621,-3.5554***,-2.1122*
+Pgl350_KY,KY,0.5647,1.3961,-5.488***,-3.1025***
+Pgl351_KY,KY,-2.5474,-0.8928,-4.7756***,-2.8961***
+Pgl352_KY,KY,1.5215,1.6805*,-8.0364***,-3.3373***
+Pgl353_EXS,EX-S,2.2695*,2.8961**,-6.8471***,-3.2881***
+Pgl354_KY,KY,0.3876,1.1927,-6.3613***,-3.1238***
+Pgl355_EXS,EX-S,-3.8833,-1.3018,-6.6694***,-3.2427***
+Pgl356_TNE,TNE,-0.3931,-0.5112,-5.7582***,-2.783**
+Pgl357_TNE,TNE,1.8734*,1.9311*,-6.065***,-2.6126**
+Pgl358_TNW,TNW,-1.5086,-0.4497,-7.0773***,-3.3373***
+Pgl359_TNW,TNW,-1.5197,-0.2395,-6.5221***,-2.9396***
+Pgl360_TNW,TNW,-0.3443,0.1524,-8.2707***,-3.2881***
+Pgl361_TNW,TNW,1.9058*,1.7752*,-7.3459***,-2.9113***
+Pgl362_TNW,TNW,1.9539*,1.956*,-9.041***,-2.9341***

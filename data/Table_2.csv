@@ -1,0 +1,25 @@
+"# Table 2. Information about the microsatellite loci used to genotype Physaria globosa. Primer names beginning with “pf” indicate primers developed in Physaria filiformis (as described in Edwards et al. 2021) that successfully cross-amplified in P. globosa.  Primers beginning with “pg” were developed specifically for P. globosa in the present study.  Includes primer sequences (forward and reverse), repeat motif, and the size range of alleles as determined in all of the sampled individuals of P. globosa."
+# Column definitions: Locus name=microsatellite locus identifier; Forward primer sequence=forward primer sequence used for amplification; Reverse primer Sequence=reverse primer sequence used for amplification; Repeat Motif=microsatellite repeat motif; Size Range=observed allele size range in base pairs
+# Note: * M13 tag (CACGACGTTGTAAAACGAC) added to 3' end of primer for amplification using a universal dye-labeling approach.
+
+Locus name,Forward primer sequence,Reverse primer Sequence,Repeat Motif,Size Range
+pf008,*ACCAATTGCAGATGAAGGCG,AGTTCTTTGTTTCGAGGGTCC,AG (10),183-194
+pf026,*TTGTAGGTGTGGCTTCGTTG,TCATCTCCACGCTCACTGAG,AG (9),182-186
+pf033,*CCAGATTCCGACACGACTTG,AACCCACATCCCACGCATC,AG (9),113-131
+pf037,*GCTTCGTATTCCTGATGCCG,CGTTTACCAAATCACTGCGC,AG (9),147-160
+pf058,*GAAGCAGACGAAGGGACAAC,GCAATTGATTAGCGAAACCGG,AG (12),149-163
+pf079,*TCGTCGCTAGGAAGATCGG,GACTTCCACGGTCGGGTATC,AG (11),173-184
+pf082,*TCCTCCACCGTCAAGTCATC,CACACACCATCTTCTTTGCAC,AG (14),141-156
+pf088,*AGGTGATGTTCTCGTTTGCC,CATACCAAAGACCTTCCAAAGC,AT (8),139-143
+pf093,*GAAGATGTTTAGCCGCTGGG,CGTTGACCGTGAAGATGTGAG,AG (10),113-123
+pf122,*ACGCAATGGAGAAGCAAAGG,ATAAGAGTGTGGTCCAGGCC,AAG (8),120-129
+pg002,*TCTTCGGATCGGCGTATAGAG,ATGGCTCTGGTCAGGACTTC,AG (13),127-146
+pg004,*ATCAACGGTGTGGATGCAAG,CAAGGTGGGATCTTTGCTCTG,AG (13),137-156
+pg012,*CTGCTGCAACGGATCCAAG,AGGAGTTCTAGAGACAGAGGC,AAG (15),320-348
+pg013,*ATGTTGTTTGTGTTCTCAGGC,CAAGAAACCTGCAGAGTCGC,AAG (15),235-257
+pg023,*ACGGTTAACACATTCGCCAC,CCCTTCTCACTTCAGCTTTGTC,AG (16),233-241
+pg024,*CGCTTCTTAAGTCCACAGGC,GTGCGAGGAGGGAAACAATG,AG (16),254-279
+pg029,*CACTGTCCGTCACTTTAACCC,ACTCTGTAGCCTGCCATCTC,AG (16),142-163
+pg030,*ATTGTAGAGACTGCCCACCG,CCTTCCATTGAATTTGATCGCC,AG (17),215-248
+pg033,TGACCCTTGACCGGACTTAG,AGGAGTCTGAGCTGCAATCC,AG (18),254-283
+pg039,*TCTGTACTGTCTTGGAGCTCG,AGTGGACAGAGTAAGTTGGAAG,AG (22),213-270

@@ -1,0 +1,8 @@
+"# Table 6. AMOVA summary table with populations divided into groups by the four ecoregions they occupy: Shawnee hills (IN), Bluegrass (KY), Highland rim (E-TN), and Nashville basin (W-TN)"
+# Column definitions: Source of variation=AMOVA variance component; df=degrees of freedom; SS=sum of squares; MS=mean square; Est. Var. (%)=estimated variance component and percentage of total variance; F-statistic=corresponding fixation statistic
+
+Source of variation,df,SS,MS,Est. Var. (%),F-statistic
+Among Regions,3,640.363,213.454,1.084 (15%),FRT=0.145
+Among pops within regions,10,646.048,64.605,1.591 (21%),FSR=0.245
+Within populations,540,2584.181,4.786,0.825 (64%),FST=0.358
+Total,553,3870.592,,7.459 (100%),
