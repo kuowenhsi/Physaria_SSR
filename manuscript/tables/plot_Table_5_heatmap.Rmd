@@ -1,0 +1,143 @@
+---
+title: "Physaria Table 5 Heatmap Workflow"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+report_dir <- dirname(knitr::current_input(dir = TRUE))
+repo_root <- normalizePath(file.path(report_dir, "..", ".."), mustWork = FALSE)
+
+input_file <- file.path(repo_root, "data", "Table_5.csv")
+output_png <- file.path(repo_root, "figure", "Table_5_pairwise_FST_GST_heatmap.png")
+```
+
+## Goal
+
+This report reads `Table_5.csv`, separates the upper and lower matrix triangles into two metrics, and plots them together as a single heatmap:
+
+- upper diagonal: pairwise `FST`
+- lower diagonal: pairwise `GST`
+
+The workflow keeps the data in a tidy format before plotting so the result is easy to modify later.
+
+## Read the Raw Table
+
+```{r read-table}
+raw_lines <- readr::read_lines(input_file)
+data_lines <- raw_lines[!str_detect(raw_lines, '^"?#') & raw_lines != ""]
+
+table_5 <- readr::read_csv(
+  I(data_lines),
+  na = c("", "NA"),
+  show_col_types = FALSE
+)
+
+population_col <- names(table_5)[1]
+table_5 <- table_5 %>%
+  rename(population = all_of(population_col))
+
+table_5
+```
+
+## Confirm Population Order
+
+The row order is important because values above the diagonal become `FST`, while values below the diagonal become `GST`.
+
+```{r population-order}
+population_levels <- table_5$population
+population_levels
+```
+
+## Convert the Matrix to Tidy Format
+
+```{r tidy-format}
+table_5_long <- table_5 %>%
+  pivot_longer(
+    cols = -population,
+    names_to = "population_2",
+    values_to = "value"
+  ) %>%
+  mutate(
+    population_1 = population,
+    row_id = match(population_1, population_levels),
+    col_id = match(population_2, population_levels),
+    metric = case_when(
+      row_id < col_id ~ "FST",
+      row_id > col_id ~ "GST",
+      TRUE ~ "Diagonal"
+    )
+  )
+
+table_5_long
+```
+
+## Remove the Diagonal and Missing Cells
+
+```{r filter-cells}
+heatmap_tbl <- table_5_long %>%
+  filter(metric != "Diagonal", !is.na(value)) %>%
+  transmute(
+    metric,
+    population_1 = factor(population_1, levels = rev(population_levels)),
+    population_2 = factor(population_2, levels = population_levels),
+    value
+  )
+
+heatmap_tbl
+```
+
+## Check Metric Counts and Ranges
+
+```{r metric-summary}
+heatmap_tbl %>%
+  group_by(metric) %>%
+  summarise(
+    n_cells = n(),
+    min_value = min(value),
+    max_value = max(value),
+    mean_value = mean(value),
+    .groups = "drop"
+  )
+```
+
+## Plot the Heatmap
+
+```{r heatmap, fig.width=11, fig.height=10}
+heatmap_plot <- ggplot(heatmap_tbl, aes(x = population_2, y = population_1, fill = value)) +
+  geom_tile(color = "white", linewidth = 0.35) +
+  geom_text(aes(label = sprintf("%.3f", value)), size = 2.3) +
+  scale_fill_viridis_c(
+    option = "magma",
+    name = "Genetic distance"
+  ) +
+  labs(
+    title = "Pairwise genetic distance heatmap",
+    subtitle = "Upper diagonal: FST | Lower diagonal: GST",
+    x = NULL,
+    y = NULL
+  ) +
+  coord_fixed() +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(face = "bold"),
+    legend.position = "right"
+  )
+
+heatmap_plot
+```
+
+## Save the Figure
+
+```{r save-output}
+ggsave(output_png, plot = heatmap_plot, width = 11, height = 10, dpi = 600)
+output_png
+```

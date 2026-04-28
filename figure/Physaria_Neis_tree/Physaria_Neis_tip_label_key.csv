@@ -1,0 +1,25 @@
+original_label,canonical_label,species,plot_label,Wen_plot_label,final_plot_label
+Pg346_IN,Pgl346_IN,P. globosa,IN_01,IN_01,IN_01
+Pg347_KY,Pgl347_KY,P. globosa,KY_02,KY_02,KY_02
+Pg348_KY_EX,Pgl348_EXS,P. globosa,EX_01,EX_01,EX_01
+Pg349_KY,Pgl349_KY,P. globosa,KY_01,KY_01,KY_01
+Pg350_KY,Pgl350_KY,P. globosa,KY_03,KY_03,KY_03
+Pg351_KY,Pgl351_KY,P. globosa,KY_04,KY_04,KY_04
+Pg352_KY,Pgl352_KY,P. globosa,KY_05,KY_05,KY_05
+Pg353_KY,Pgl353_EXS,P. globosa,EX_02,EX_02,EX_02
+Pg354_KY,Pgl354_KY,P. globosa,KY_06,KY_06,KY_06
+Pg355_KY_EX,Pgl355_EXS,P. globosa,EX_03,EX_03,EX_03
+Pg356_TN_E,Pgl356_TNE,P. globosa,TNE_02,TNE_02,TNE_02
+Pg357_TN_E,Pgl357_TNE,P. globosa,TNE_01,TNE_01,TNE_01
+Pg358_TN_C,Pgl358_TNW,P. globosa,TNW_04,TNW_04,TNW_04
+Pg359_TN_C,Pgl359_TNW,P. globosa,TNW_05,TNW_05,TNW_05
+Pg360_TN_C,Pgl360_TNW,P. globosa,TNW_03,TNW_03,TNW_03
+Pg361_TN_W,Pgl361_TNW,P. globosa,TNW_02,TNW_02,TNW_02
+Pg362_TN_W,Pgl362_TNW,P. globosa,TNW_01,TNW_01,TNW_01
+AR1,PoAR01,P. ouachitensis,P. ouachitensis PoAR01,P. ouachitensis AR_01,P. ouachitensis AR_01
+AR2,PoAR02,P. ouachitensis,P. ouachitensis PoAR02,P. ouachitensis AR_02,P. ouachitensis AR_02
+AR3,PoAR03,P. ouachitensis,P. ouachitensis PoAR03,P. ouachitensis AR_03,P. ouachitensis AR_03
+MO10,MO10,P. filiformis,P. filiformis MO10,P. filiformis MO_10,P. filiformis MO_10
+MO11,MO11,P. filiformis,P. filiformis MO11,P. filiformis MO_11,P. filiformis MO_11
+MO6,MO6,P. filiformis,P. filiformis MO6,P. filiformis MO_06,P. filiformis MO_06
+TX1,TX1,P. gracilis,P. gracilis TX1,P. gracilis TX_011,P. gracilis TX_011

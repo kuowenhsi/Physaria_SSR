@@ -1,0 +1,201 @@
+---
+title: "STRUCTURE Individual-Level Mean Barplots Across K"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(clue)
+
+report_dir <- dirname(knitr::current_input(dir = TRUE))
+repo_root <- normalizePath(file.path(report_dir, "..", ".."), mustWork = FALSE)
+
+structure_dir <- file.path(repo_root, "results", "structureHarvester")
+sample_file <- file.path(repo_root, "data", "PG_All_structure.txt")
+output_dir <- file.path(repo_root, "figure", "STRUCTURE_individual_allK")
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+## Goal
+
+This report uses the `structureHarvester` `K*.indfile` outputs and the sample order from `PG_All_structure.txt` to build individual-level STRUCTURE bar plots for `K = 1` to `K = 13`.
+
+Workflow highlights:
+
+- each `K*.indfile` contains 5 replicate runs
+- cluster labels are aligned across runs using a one-to-one assignment step
+- the 5 aligned runs are averaged for each individual
+- individuals are shown in the original sample order, nested by population within state groups
+
+## Read Sample Metadata and Order
+
+```{r sample-metadata}
+sample_lines <- readr::read_lines(sample_file)[-1]
+
+sample_meta <- tibble(raw_line = sample_lines) %>%
+  mutate(
+    parts = str_split(str_squish(raw_line), "\\s+"),
+    sample_id = map_chr(parts, 1),
+    population = str_extract(sample_id, "Pg\\d+"),
+    state = case_when(
+      population == "Pg346" ~ "IN",
+      population %in% c("Pg347", "Pg349", "Pg350", "Pg351", "Pg352", "Pg354") ~ "KY",
+      population %in% c("Pg348", "Pg353", "Pg355") ~ "EX-S",
+      population %in% c("Pg356", "Pg357") ~ "TNE",
+      population %in% c("Pg358", "Pg359", "Pg360", "Pg361", "Pg362") ~ "TNW",
+      TRUE ~ "Unknown"
+    ),
+    sample_order = row_number()
+  ) %>%
+  select(sample_id, population, state, sample_order)
+
+sample_meta
+```
+
+## Helper Functions
+
+```{r helpers}
+read_indfile <- function(path, k) {
+  lines <- readr::read_lines(path) %>%
+    keep(~ str_detect(.x, ":"))
+
+  parsed <- purrr::map_dfr(lines, function(line) {
+    line <- str_squish(line)
+    pieces <- str_split_fixed(line, " : ", 2)
+    left <- str_split(pieces[1], "\\s+")[[1]]
+    qvals <- as.numeric(str_split(pieces[2], "\\s+")[[1]])
+
+    tibble(
+      individual_index = as.integer(left[1]),
+      pop_code = as.integer(left[length(left)]),
+      q = list(qvals)
+    )
+  })
+
+  qmat <- do.call(rbind, parsed$q)
+  colnames(qmat) <- paste0("cluster_", seq_len(k))
+
+  bind_cols(parsed %>% select(individual_index, pop_code), as_tibble(qmat))
+}
+
+align_and_average_runs <- function(ind_tbl, sample_meta, k, n_runs = 5) {
+  n_samples <- nrow(sample_meta)
+  stopifnot(nrow(ind_tbl) == n_samples * n_runs)
+
+  run_list <- purrr::map(seq_len(n_runs), function(run_id) {
+    start_idx <- (run_id - 1) * n_samples + 1
+    end_idx <- run_id * n_samples
+    ind_tbl[start_idx:end_idx, paste0("cluster_", seq_len(k))] %>%
+      as.matrix()
+  })
+
+  ref <- run_list[[1]]
+  aligned <- list(ref)
+
+  if (k > 1) {
+    for (run_id in 2:n_runs) {
+      current <- run_list[[run_id]]
+      similarity <- cor(ref, current, use = "pairwise.complete.obs")
+      similarity[is.na(similarity)] <- -1
+      similarity <- similarity - min(similarity) + 1e-9
+      perm <- solve_LSAP(similarity, maximum = TRUE)
+      aligned[[run_id]] <- current[, perm, drop = FALSE]
+    }
+  } else {
+    for (run_id in 2:n_runs) {
+      aligned[[run_id]] <- run_list[[run_id]]
+    }
+  }
+
+  avg_q <- Reduce(`+`, aligned) / n_runs
+  colnames(avg_q) <- paste0("cluster_", seq_len(k))
+
+  bind_cols(sample_meta, as_tibble(avg_q))
+}
+
+build_barplot <- function(avg_tbl, k) {
+  cluster_cols <- paste0("cluster_", seq_len(k))
+
+  long_tbl <- avg_tbl %>%
+    pivot_longer(cols = all_of(cluster_cols), names_to = "cluster", values_to = "membership") %>%
+    mutate(cluster = factor(cluster, levels = cluster_cols), x = sample_order)
+
+  pop_breaks <- avg_tbl %>%
+    group_by(population, state) %>%
+    summarise(
+      xmin = min(sample_order) - 0.5,
+      xmax = max(sample_order) + 0.5,
+      xmid = mean(sample_order),
+      .groups = "drop"
+    )
+
+  state_breaks <- avg_tbl %>%
+    group_by(state) %>%
+    summarise(
+      xmin = min(sample_order) - 0.5,
+      xmax = max(sample_order) + 0.5,
+      xmid = mean(sample_order),
+      .groups = "drop"
+    )
+
+  pop_separators <- head(pop_breaks$xmax, -1)
+  state_separators <- head(state_breaks$xmax, -1)
+
+  cluster_palette <- grDevices::hcl.colors(k, palette = "Set 3", rev = FALSE)
+  names(cluster_palette) <- cluster_cols
+
+  ggplot(long_tbl, aes(x = x, y = membership, fill = cluster)) +
+    geom_col(width = 1, color = NA) +
+    geom_vline(xintercept = pop_separators, color = "white", linewidth = 0.25) +
+    geom_vline(xintercept = state_separators, color = "gray20", linewidth = 0.55) +
+    annotate("text", x = pop_breaks$xmid, y = -0.035, label = pop_breaks$population, angle = 90, size = 2.1, vjust = 0.5) +
+    annotate("text", x = state_breaks$xmid, y = 1.04, label = state_breaks$state, size = 3.2, fontface = "bold") +
+    scale_fill_manual(values = cluster_palette, name = "Cluster") +
+    scale_x_continuous(expand = c(0, 0), breaks = NULL) +
+    scale_y_continuous(limits = c(-0.06, 1.08), breaks = seq(0, 1, by = 0.2), expand = c(0, 0)) +
+    coord_cartesian(clip = "off") +
+    labs(
+      title = paste0("STRUCTURE ancestry composition at K = ", k),
+      subtitle = "Individual-level mean ancestry across 5 aligned runs; populations nested within state groups",
+      x = NULL,
+      y = "Mean ancestry coefficient"
+    ) +
+    theme_minimal(base_size = 11) +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      legend.position = "right",
+      plot.margin = margin(15, 15, 40, 15),
+      plot.title = element_text(face = "bold")
+    )
+}
+```
+
+## Example: K = 11
+
+```{r k11-example, fig.width=14, fig.height=5.8}
+k <- 11
+ind_tbl <- read_indfile(file.path(structure_dir, paste0("K", k, ".indfile")), k)
+avg_tbl <- align_and_average_runs(ind_tbl, sample_meta, k = k, n_runs = 5)
+build_barplot(avg_tbl, k)
+```
+
+## Interpretation Notes
+
+The averaged plots should be read with two points in mind:
+
+- the alignment step reduces label switching across runs by matching clusters to the first run before averaging
+- higher K values may still show more instability and finer subdivisions even after alignment, so they should be interpreted together with the Evanno and LnP summaries
+
+In this dataset:
+
+- `K = 2` is the strongest Evanno-supported upper-level split
+- larger K values likely reflect progressively finer hierarchical structure within `P. globosa`
+- the nested layout helps show whether those finer components are mainly state-level, population-level, or admixed within populations
+```

@@ -1,0 +1,379 @@
+---
+title: "Physaria Table 3 Microsatellite Summary Workflow"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggrepel)
+
+report_dir <- dirname(knitr::current_input(dir = TRUE))
+repo_root <- normalizePath(file.path(report_dir, "..", ".."), mustWork = FALSE)
+
+input_file <- file.path(repo_root, "data", "Table_3.csv")
+table_4_file <- file.path(repo_root, "data", "Table_4.csv")
+output_dir <- file.path(repo_root, "figure", "Table_3")
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+## Goal
+
+This report parses `Table_3.csv` and integrates the bottleneck test results from `Table_4.csv` into a set of useful plots for microsatellite summary statistics. The goal is to show:
+
+- diversity patterns across populations
+- observed versus expected heterozygosity
+- fixation and null-allele diagnostics
+- relative metric highs and lows across populations
+- species-level averages reported in the manuscript
+- Table 4 bottleneck significance alongside heterozygosity patterns
+
+## Read and Parse Table 3
+
+```{r read-table}
+raw_lines <- readr::read_lines(input_file)
+data_lines <- raw_lines[!str_detect(raw_lines, '^"?#') & raw_lines != ""]
+
+table_3 <- readr::read_csv(I(data_lines), na = c("", "NA"), show_col_types = FALSE) %>%
+  mutate(across(c(n, A, AR, AP, Ho, He, F, `% null`, FB), as.numeric)) %>%
+  mutate(
+    row_type = case_when(
+      str_detect(Population, "^Average across") ~ "average",
+      if_all(all_of(c("n", "A", "AR", "AP", "Ho", "He", "F", "% null", "FB")), is.na) ~ "section",
+      TRUE ~ "population"
+    ),
+    species_header = if_else(row_type == "section", Population, NA_character_)
+  ) %>%
+  fill(species_header, .direction = "down") %>%
+  mutate(
+    species = case_when(
+      str_detect(Population, "^Average across P\\. globosa") ~ "P. globosa",
+      str_detect(Population, "^Average across P\\. ouachitensis") ~ "P. ouachitensis",
+      str_detect(Population, "^Average across P\\. filiformis") ~ "P. filiformis",
+      str_detect(Population, "^Average across P\\. gracilis") ~ "P. gracilis",
+      TRUE ~ species_header
+    )
+  ) %>%
+  select(-species_header)
+
+table_3
+```
+
+## Split Population Rows and Average Rows
+
+```{r split-rows}
+extract_significance <- function(x) {
+  case_when(
+    str_detect(x, fixed("***")) ~ "P < 0.0001",
+    str_detect(x, fixed("**")) ~ "P < 0.001",
+    str_detect(x, fixed("*")) ~ "P < 0.01",
+    TRUE ~ "Not significant"
+  )
+}
+
+parse_stat_value <- function(x) {
+  readr::parse_number(x)
+}
+
+table_4_lines <- readr::read_lines(table_4_file)
+table_4_data_lines <- table_4_lines[!str_detect(table_4_lines, '^"?#') & table_4_lines != ""]
+
+table_4 <- readr::read_csv(I(table_4_data_lines), show_col_types = FALSE) %>%
+  transmute(
+    Population,
+    `Geographic area`,
+    het_excess_z_raw = `Excess in heterozygosity Z-test`,
+    het_excess_w_raw = `Excess in heterozygosity Wilcoxon signed-rank test`,
+    mratio_z_raw = `Deficiency in M-Ratio Z-test`,
+    mratio_w_raw = `Deficiency in M-Ratio Wilcoxon signed-rank test`,
+    het_excess_z = parse_stat_value(het_excess_z_raw),
+    het_excess_w = parse_stat_value(het_excess_w_raw),
+    mratio_z = parse_stat_value(mratio_z_raw),
+    mratio_w = parse_stat_value(mratio_w_raw),
+    het_excess_z_sig = extract_significance(het_excess_z_raw),
+    het_excess_w_sig = extract_significance(het_excess_w_raw),
+    mratio_z_sig = extract_significance(mratio_z_raw),
+    mratio_w_sig = extract_significance(mratio_w_raw)
+  ) %>%
+  mutate(
+    het_bottleneck_sig = case_when(
+      het_excess_z_sig == "P < 0.0001" | het_excess_w_sig == "P < 0.0001" ~ "P < 0.0001",
+      het_excess_z_sig == "P < 0.001" | het_excess_w_sig == "P < 0.001" ~ "P < 0.001",
+      het_excess_z_sig == "P < 0.01" | het_excess_w_sig == "P < 0.01" ~ "P < 0.01",
+      TRUE ~ "Not significant"
+    ),
+    mratio_bottleneck_sig = case_when(
+      mratio_z_sig == "P < 0.0001" | mratio_w_sig == "P < 0.0001" ~ "P < 0.0001",
+      mratio_z_sig == "P < 0.001" | mratio_w_sig == "P < 0.001" ~ "P < 0.001",
+      mratio_z_sig == "P < 0.01" | mratio_w_sig == "P < 0.01" ~ "P < 0.01",
+      TRUE ~ "Not significant"
+    )
+  )
+
+population_tbl <- table_3 %>% filter(row_type == "population")
+average_tbl <- table_3 %>% filter(row_type == "average")
+
+population_tbl <- population_tbl %>%
+  left_join(table_4, by = c("Population", "Geographic area")) %>%
+  mutate(
+    het_bottleneck_sig = replace_na(het_bottleneck_sig, "Not tested"),
+    mratio_bottleneck_sig = replace_na(mratio_bottleneck_sig, "Not tested")
+  )
+
+population_tbl
+```
+
+## Suggested Plot Types for This Table
+
+These are the most informative plot families for this dataset:
+
+- faceted diversity plots for `A`, `AR`, and `AP`
+- heterozygosity profile plots comparing `Ho` and `He`
+- `Ho` versus `He` scatterplots with a 1:1 reference line
+- bottleneck significance overlays from Table 4 on the heterozygosity plots
+- fixation/null diagnostics for `F`, `FB`, and `% null`
+- a dedicated bottleneck-statistics panel for P. globosa
+- standardized heatmaps across all metrics
+- species-level average summaries from the manuscript
+
+## Diversity Metrics by Population
+
+```{r diversity-plot, fig.width=10, fig.height=11}
+species_colors <- c(
+  "P. globosa" = "#1f78b4",
+  "P. ouachitensis" = "#e31a1c",
+  "P. filiformis" = "#33a02c",
+  "P. gracilis" = "#ff7f00"
+)
+
+sig_shapes <- c(
+  "Not tested" = 21,
+  "Not significant" = 21,
+  "P < 0.01" = 24,
+  "P < 0.001" = 22,
+  "P < 0.0001" = 23
+)
+
+sig_fills <- c(
+  "Not tested" = "white",
+  "Not significant" = "white",
+  "P < 0.01" = "#fdd835",
+  "P < 0.001" = "#fb8c00",
+  "P < 0.0001" = "#d7301f"
+)
+
+metric_labels <- c(
+  A = "Alleles per locus (A)",
+  AR = "Allelic richness (AR)",
+  AP = "Private alleles (AP)",
+  Ho = "Observed heterozygosity (Ho)",
+  He = "Expected heterozygosity (He)",
+  F = "Fixation index (F)",
+  `% null` = "Null alleles (%)",
+  FB = "Adjusted fixation index (FB)"
+)
+
+diversity_long <- population_tbl %>%
+  select(Population, species, A, AR, AP) %>%
+  pivot_longer(cols = c(A, AR, AP), names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric, levels = c("A", "AR", "AP"), labels = metric_labels[c("A", "AR", "AP")]),
+    Population = fct_reorder(Population, value)
+  )
+
+ggplot(diversity_long, aes(x = value, y = Population, color = species)) +
+  geom_segment(aes(x = 0, xend = value, y = Population, yend = Population), linewidth = 0.35, alpha = 0.5) +
+  geom_point(size = 2.2) +
+  facet_wrap(~metric, scales = "free_x", ncol = 1) +
+  scale_color_manual(values = species_colors) +
+  labs(title = "Microsatellite diversity metrics by population", x = NULL, y = NULL, color = "Species") +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid.major.y = element_blank(), legend.position = "bottom")
+```
+
+## Heterozygosity Patterns
+
+```{r heterozygosity-profile, fig.width=11, fig.height=8.5}
+het_long <- population_tbl %>%
+  mutate(Population = fct_reorder(Population, He)) %>%
+  select(Population, species, Ho, He, het_bottleneck_sig) %>%
+  pivot_longer(cols = c(Ho, He), names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = recode(metric, Ho = "Observed (Ho)", He = "Expected (He)")
+  )
+
+ggplot(het_long, aes(x = value, y = Population, color = metric)) +
+  geom_line(aes(group = Population), color = "gray70", linewidth = 0.4) +
+  geom_point(aes(shape = het_bottleneck_sig, fill = het_bottleneck_sig), size = 2.6, stroke = 0.35) +
+  facet_wrap(~species, scales = "free_y", ncol = 2) +
+  scale_color_manual(values = c("Observed (Ho)" = "#1b9e77", "Expected (He)" = "#d95f02")) +
+  scale_shape_manual(values = sig_shapes, drop = FALSE) +
+  scale_fill_manual(values = sig_fills, drop = FALSE) +
+  labs(
+    title = "Observed versus expected heterozygosity",
+    subtitle = "Point symbols show heterozygosity-excess bottleneck significance from Table 4",
+    x = "Heterozygosity",
+    y = NULL,
+    color = NULL,
+    shape = "Het. excess test",
+    fill = "Het. excess test"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom")
+```
+
+```{r heterozygosity-scatter, fig.width=9, fig.height=7}
+ggplot(population_tbl, aes(x = He, y = Ho, color = species, size = n)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray55") +
+  geom_point(aes(shape = het_bottleneck_sig, fill = het_bottleneck_sig), alpha = 0.95, stroke = 0.4) +
+  geom_text_repel(aes(label = Population), size = 2.7, max.overlaps = 50, show.legend = FALSE) +
+  scale_color_manual(values = species_colors) +
+  scale_size_continuous(range = c(2, 7)) +
+  scale_shape_manual(values = sig_shapes, drop = FALSE) +
+  scale_fill_manual(values = sig_fills, drop = FALSE) +
+  coord_equal() +
+  labs(
+    title = "Observed versus expected heterozygosity across populations",
+    subtitle = "Points below the 1:1 line indicate heterozygote deficiency; symbols show Table 4 heterozygosity-excess significance",
+    x = "Expected heterozygosity (He)",
+    y = "Observed heterozygosity (Ho)",
+    color = "Species",
+    size = "Sample size",
+    shape = "Het. excess test",
+    fill = "Het. excess test"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom")
+```
+
+## Fixation and Null Diagnostics
+
+```{r diagnostics, fig.width=10, fig.height=11}
+diagnostic_long <- population_tbl %>%
+  select(Population, species, F, FB, `% null`) %>%
+  pivot_longer(cols = c(F, FB, `% null`), names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric, levels = c("F", "FB", "% null"), labels = metric_labels[c("F", "FB", "% null")]),
+    Population = fct_reorder(Population, value)
+  )
+
+ggplot(diagnostic_long, aes(x = value, y = Population, color = species)) +
+  geom_vline(xintercept = 0, color = "gray80", linewidth = 0.4) +
+  geom_point(size = 2) +
+  facet_wrap(~metric, scales = "free_x", ncol = 1) +
+  scale_color_manual(values = species_colors) +
+  labs(title = "Fixation and null-allele diagnostics", x = NULL, y = NULL, color = "Species") +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid.major.y = element_blank(), legend.position = "bottom")
+```
+
+## Standardized Metric Heatmap
+
+## Table 4 Bottleneck Statistics
+
+```{r bottleneck-panel, fig.width=10, fig.height=11}
+bottleneck_long <- population_tbl %>%
+  filter(species == "P. globosa", !is.na(het_excess_z)) %>%
+  select(
+    Population,
+    `Geographic area`,
+    het_excess_z,
+    het_excess_w,
+    mratio_z,
+    mratio_w,
+    het_excess_z_sig,
+    het_excess_w_sig,
+    mratio_z_sig,
+    mratio_w_sig
+  ) %>%
+  pivot_longer(
+    cols = c(het_excess_z, het_excess_w, mratio_z, mratio_w),
+    names_to = "test",
+    values_to = "statistic"
+  ) %>%
+  mutate(
+    sig = case_when(
+      test == "het_excess_z" ~ het_excess_z_sig,
+      test == "het_excess_w" ~ het_excess_w_sig,
+      test == "mratio_z" ~ mratio_z_sig,
+      test == "mratio_w" ~ mratio_w_sig
+    ),
+    test = factor(
+      test,
+      levels = c("het_excess_z", "het_excess_w", "mratio_z", "mratio_w"),
+      labels = c(
+        "Het. excess Z-test",
+        "Het. excess Wilcoxon",
+        "M-ratio deficiency Z-test",
+        "M-ratio deficiency Wilcoxon"
+      )
+    ),
+    Population = fct_reorder(Population, statistic)
+  )
+
+ggplot(bottleneck_long, aes(x = statistic, y = Population)) +
+  geom_vline(xintercept = 0, color = "gray82", linewidth = 0.4) +
+  geom_segment(aes(x = 0, xend = statistic, y = Population, yend = Population), color = "gray75", linewidth = 0.35) +
+  geom_point(aes(fill = sig, shape = sig), color = "black", size = 2.6, stroke = 0.3) +
+  facet_wrap(~test, scales = "free_x", ncol = 1) +
+  scale_shape_manual(values = sig_shapes[c("Not significant", "P < 0.01", "P < 0.001", "P < 0.0001")], drop = FALSE) +
+  scale_fill_manual(values = sig_fills[c("Not significant", "P < 0.01", "P < 0.001", "P < 0.0001")], drop = FALSE) +
+  labs(
+    title = "Table 4 bottleneck test statistics for P. globosa",
+    subtitle = "Symbols encode reported significance levels",
+    x = "Test statistic",
+    y = NULL,
+    shape = "Significance",
+    fill = "Significance"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid.major.y = element_blank(), legend.position = "bottom")
+```
+
+## Standardized Metric Heatmap
+
+```{r heatmap, fig.width=11, fig.height=8.5}
+heatmap_long <- population_tbl %>%
+  select(Population, species, A, AR, AP, Ho, He, F, `% null`, FB) %>%
+  pivot_longer(cols = c(A, AR, AP, Ho, He, F, `% null`, FB), names_to = "metric", values_to = "value") %>%
+  group_by(metric) %>%
+  mutate(z_value = as.numeric(scale(value))) %>%
+  ungroup() %>%
+  mutate(
+    metric = factor(metric, levels = c("A", "AR", "AP", "Ho", "He", "F", "% null", "FB"), labels = metric_labels[c("A", "AR", "AP", "Ho", "He", "F", "% null", "FB")])
+  )
+
+ggplot(heatmap_long, aes(x = metric, y = Population, fill = z_value)) +
+  geom_tile(color = "white", linewidth = 0.3) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b", midpoint = 0, name = "Z-score") +
+  labs(
+    title = "Standardized microsatellite summary heatmap",
+    subtitle = "Values are scaled within each metric to highlight relative highs and lows",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(panel.grid = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Species-Level Averages
+
+```{r species-averages, fig.width=12, fig.height=8}
+average_long <- average_tbl %>%
+  select(species, A, AR, AP, Ho, He, F, `% null`, FB) %>%
+  pivot_longer(cols = -species, names_to = "metric", values_to = "value") %>%
+  mutate(
+    metric = factor(metric, levels = c("A", "AR", "AP", "Ho", "He", "F", "% null", "FB"), labels = metric_labels[c("A", "AR", "AP", "Ho", "He", "F", "% null", "FB")])
+  )
+
+ggplot(average_long, aes(x = species, y = value, fill = species)) +
+  geom_col(width = 0.72) +
+  facet_wrap(~metric, scales = "free_y", ncol = 4) +
+  scale_fill_manual(values = species_colors, guide = "none") +
+  labs(title = "Species-level averages reported in Table 3", x = NULL, y = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1))
+```

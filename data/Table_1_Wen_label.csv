@@ -1,0 +1,29 @@
+"# Table 1. Information about the populations and samples of Physaria globosa included in the study, including voucher number, collection locality, ecoregion, GPS coordinates, and number of samples collected per site."
+"# Column definitions: Population code=population identifier used in the study; Collector=voucher or collector information; Species name=taxon name for the sampled population; State, County, Locality (Element Occurrence number)=collection locality description; Ecoregion=ecoregion or management category; Lat=latitude in decimal degrees; Long=longitude in decimal degrees; Number of samples=number of sampled individuals included from the site"
+# Note: * Samples collected as part of a previous study on Physaria filiformis (Edwards et al. 2021).
+
+Population code,Collector,Species name,"State, County, Locality (Element Occurrence number)",Ecoregion,Lat,Long,Number of samples
+EX_01,"Edwards, Linan and Littlefield 348 (MO)",P.  globosa,"KY, Franklin, Cove Spring reintroduction (EO30),  source: KY EOs18 and 28",Ex situ,38.22,-84.84,24
+EX_02,"Edwards, Linan and Littlefield (MO)",P.  globosa,"KY, Jessamine Creek Gorge Preserve source: Julian Campbell’s yard (see 355)",Ex situ,37.83,-84.64,24
+EX_03,"Edwards, Linan and Littlefield (MO)",P.  globosa,"KY—Julian Campbell's yard in Lexington KY source: IN, KY (Jessamine county), TN (Davidson Co)",Ex situ,37.98,-84.49189,26
+IN_01,Edwards and Linan 346 (MO),P.  globosa,"IN, Posey, Big Cypress Slough",Shawnee Hills,37.82,-88,24
+TNW_01,"Edwards, Linan and Dell",P.  globosa,"TN, Montgomery, King and Queen's Bluff (EO 12)",Highland Rim,"36.501393, -",-87.318045,14
+TNW_02,"Edwards, Linan and Dell",P.  globosa,"TN, Montgomery, Jarrell Ridge Road (EO28)",Highland Rim,36.39425,-87.262326,9
+KY_01,"Edwards, Linan and Littlefield 349 (MO)",P. globosa,"KY, Franklin, Near intersection of Camp Pleasant Rd. and Gregory Woods Rd. (EO23a)",Bluegrass,38.31,-84.8,24
+KY_02,"Edwards, Linan and Littlefield 347 (MO)",P. globosa,"KY, Franklin, EO 18, Cove Spring, Area North of parking lot on 127, just north of its intersection with 421 (EO18)",Bluegrass,38.22,-84.85,11
+KY_03,"Edwards, Linan and Littlefield 350 (MO)",P. globosa,"KY, Franklin, Bald Knob (EO07)",Bluegrass,38.20,-84.88,23
+KY_04,"Edwards, Linan and Littlefield 351 (MO)",P. globosa,"KY, Franklin, Ninevah Rd. (EO 04)",Bluegrass,38.11,-84.87,24
+KY_05,"Edwards, Linan and Littlefield (MO)",P. globosa,"KY, Woodford, off Delaney Ferry Rd (Murphy property, EO28)",Bluegrass/ partially cultivated,37.97,-84.69,24
+KY_06,"Edwards, Linan and Littlefield (MO)",P. globosa,"KY, Madison, Valley View (EO10a)",Bluegrass,37.84,-84.42,11
+TNE_01,"Edwards, Albrecht, and Elam (MO)",P. globosa,"TN, Troutsdale, East of Hartsville Boat Ramp (EO03)",Nashville Basin,36.3736,-86.172,24
+TNE_02,"Edwards, Albrecht, and Elam",P. globosa,"TN, Smith, North of Cordell Hull Dam, Bluffs over Cumberland river (EO24)",Nashville Basin,36.3058,-85.9404,24
+TNW_03,"Edwards, Linan and Dell (MO)",P. globosa,"TN, Cheatham, Lock B Rd. near Recycle Center/train tracks (EO01)",Highland Rim,36.242107,-87.042081,24
+TNW_04,"Edwards, Linan and Dell (MO)",P. globosa,"TN, Davidson, McMinn’s bluff #1 (EO04)",Highland Rim,36.208363,-86.980126,24
+TNW_05,"Edwards, Linan and Dell (MO)",P. globosa,"TN, Davidson/Cheatham, McMinn’s bluff #3 (EO10)",Highland Rim,36.213167,-86.961927,24
+MO_10*,Edwards 281,P. filiformis,"Greene County, MO; Wilsons Creek - Wire Road",Ozark Plateau,37.092,-93.415,6
+MO_11*,Edwards 282,P. filiformis,"Greene County, MO; Wilsons Creek - Bloody Hill",Ozark Plateau,37.1044,-93.41138,7
+MO_06*,Rimer s.n. (MO),P. filiformis,"Greene County, MO; Seepside Glade",Ozark Plateau,37.296224,-93.406067,4
+TX_01*,Yatskievych 16-110 (TEX),P. gracilis,"Williamson county, TX; near San Gabriel River",Coastal Plains,30.656944,-97.415278,11
+AR_01*,Yatskievych 15-003 (MO),“P.  ouachitensis”,Garland county AR; Cedar Fourche Recreation Area,Ouachita mountains,34.666,-93.283472,5
+AR_02*,Yatskievych 15-009 (MO),“P. ouachitensis”,Garland county AR; North side of Lake Ouachita,Ouachita mountains,34.663528,-93.268444,9
+AR_03*,Yatskievych 15-012 (MO),“P. ouachitensis”,"Hos Spring county, AR; Ross Foundation Property",Ouachita mountains,34.350361,-93.067444,4
