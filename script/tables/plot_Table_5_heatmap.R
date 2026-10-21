@@ -13,12 +13,12 @@ repo_root <- normalizePath(file.path(script_dir, "..", ".."))
 source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 input_file <- file.path(repo_root, "data", "PG_All.csv")
-output_png <- file.path(repo_root, "figure", "Table_5_pairwise_FST_GST_heatmap.png")
-output_csv <- file.path(repo_root, "figure", "Table_5_pairwise_FST_GST_recomputed.csv")
+output_png <- file.path(repo_root, "figure", suffix_filename("Table_5_pairwise_FST_GST_heatmap.png"))
+output_csv <- file.path(repo_root, "figure", suffix_filename("Table_5_pairwise_FST_GST_recomputed.csv"))
 wen_lookup <- read_wen_label_lookup(repo_root)
 
 order_wen_labels <- function(labels) {
-  state_order <- c("IN", "KY", "EX", "TNE", "TNW")
+  state_order <- c("IN", "KY", "TR", "EX", "TNE", "TNW")
 
   tibble(label = labels) %>%
     mutate(
@@ -212,7 +212,7 @@ for (fill_option in color_options) {
   out_file <- if (fill_option == "inferno") {
     output_png
   } else {
-    file.path(repo_root, "figure", paste0("Table_5_pairwise_FST_GST_heatmap_", fill_option, ".png"))
+    file.path(repo_root, "figure", suffix_filename(paste0("Table_5_pairwise_FST_GST_heatmap_", fill_option, ".png")))
   }
 
   ggsave(out_file, plot = heatmap_plot, width = 3.7, height = 3.5, dpi = 600)

@@ -7,6 +7,8 @@ library(ggspatial)
 library(ggrepel)
 library(scatterpie)
 
+setwd("/Users/kuowenhsi/Library/CloudStorage/OneDrive-MissouriBotanicalGarden/General - IMLS National Leadership Grant 2023/Manuscript/Physaria_SSR/script")
+
 args <- commandArgs(trailingOnly = FALSE)
 file_arg <- grep("^--file=", args, value = TRUE)
 script_dir <- if (length(file_arg) > 0) {
@@ -16,7 +18,7 @@ script_dir <- if (length(file_arg) > 0) {
 } else {
   getwd()
 }
-repo_root <- normalizePath(file.path(script_dir, "..", ".."))
+repo_root <- normalizePath(file.path(script_dir, ".."))
 source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 input_file <- file.path(repo_root, "data", "Table_1.csv")
@@ -27,6 +29,7 @@ hfp_states_file <- file.path(repo_root, "data", "P_globosa_map", "USA_adm1.shp")
 hfp_file <- file.path(repo_root, "data", "hfp_2020_100m_p_globosa_water_overlay_extent.tif")
 wen_lookup <- read_wen_label_lookup(repo_root)
 k_values <- 2:8
+major_city_names <- c("Nashville", "Clarksville", "Evansville", "Louisville", "Lexington")
 
 read_table_1 <- function(path) {
   raw_lines <- readr::read_lines(path)
@@ -90,7 +93,7 @@ generate_random_offsets <- function(point_tbl, map_bbox, seed = 42, frac = 0.20)
     )
 }
 
-prepare_hfp_overlay <- function(path, map_bbox, aggregate_fact = 3, alpha = 0.42) {
+prepare_hfp_overlay <- function(path, map_bbox, aggregate_fact = 3, alpha = 0.6) {
   hfp <- terra::rast(path)
   terra::NAflag(hfp) <- 65535
   hfp[hfp > 50000] <- NA
@@ -148,7 +151,8 @@ offset_tbl <- tribble(
   "TNW_03", "Pgl360_TNW", 81983.0, 90000,
   "TNW_02", "Pgl361_TNW", 50000, 60000,
   "TNW_01", "Pgl362_TNW", -8547.2, 60000
-)
+) %>%
+  mutate(point_id = apply_wen_label_from_canonical(population_code, wen_lookup))
 
 state_sf <- st_read(hfp_states_file, quiet = TRUE) %>%
   filter(NAME_1 %in% c("Indiana", "Kentucky", "Tennessee", "Illinois")) %>%
@@ -174,6 +178,43 @@ state_labels <- tibble(
   st_transform(3857) %>%
   cbind(st_coordinates(.)) %>%
   as_tibble()
+
+major_city_labels <- ne_download(
+  scale = 10,
+  type = "populated_places",
+  category = "cultural",
+  returnclass = "sf"
+) %>%
+  filter(NAMEASCII %in% major_city_names, ADM0NAME == "United States of America") %>%
+  st_transform(3857)
+
+major_city_labels <- major_city_labels[
+  st_intersects(major_city_labels, map_bbox_sfc, sparse = FALSE)[, 1],
+]
+
+major_city_labels <- major_city_labels %>%
+  cbind(st_coordinates(.)) %>%
+  st_drop_geometry() %>%
+  as_tibble() %>%
+  transmute(
+    label = NAMEASCII,
+    X,
+    Y,
+    nudge_x = c(
+      "Clarksville" = 0,
+      "Evansville" = 0,
+      "Louisville" = 0,
+      "Lexington" = 0,
+      "Nashville" = 0
+    )[NAMEASCII],
+    nudge_y = c(
+      "Clarksville" = 10000,
+      "Evansville" = 0,
+      "Louisville" = 0,
+      "Lexington" = 0,
+      "Nashville" = -10000
+    )[NAMEASCII]
+  )
 
 largewater_sf <- st_read(largewater_file, quiet = TRUE) %>%
   st_make_valid() %>%
@@ -215,9 +256,13 @@ base_pie_radius <- min(
 ) * 0.028
 
 for (k in k_values) {
-  structure_file <- file.path(structure_dir, sprintf("STRUCTURE_K%02d_individual_mean.csv", k))
+
+  structure_file <- file.path(structure_dir, suffix_filename(sprintf("STRUCTURE_K%02d_individual_mean.csv", k)))
   structure_tbl <- read_structure_k(structure_file, k)
   cluster_cols <- paste0("cluster_", seq_len(k))
+  if (k == 3){
+    cluster_cols <- paste0("cluster_", c(1,3,2)) 
+  }
 
   point_xy <- point_xy_base %>%
     left_join(structure_tbl, by = c("point_id" = "population_label")) %>%
@@ -235,8 +280,8 @@ for (k in k_values) {
   p <- ggplot() +
     geom_sf(
       data = state_sf,
-      aes(fill = state_fill),
-      color = NA
+      fill = NA,
+      color = "black"
     ) +
     scale_fill_identity() +
     ggnewscale::new_scale_fill() +
@@ -272,6 +317,15 @@ for (k in k_values) {
       inherit.aes = FALSE,
       size = 5.2,
       color = "#4d4d4d",
+      fontface = "bold",
+      family = "sans"
+    ) +
+    geom_text(
+      data = major_city_labels,
+      aes(x = X + nudge_x, y = Y + nudge_y, label = label),
+      inherit.aes = FALSE,
+      size = 3.4,
+      color = "#333333",
       fontface = "bold",
       family = "sans"
     ) +
@@ -339,7 +393,7 @@ for (k in k_values) {
     )
 
   ggsave(
-    file.path(repo_root, "figure", sprintf("P_globosa_water_overlay_scatterpie_K%02d_hfp.png", k)),
+    file.path(repo_root, "figure", suffix_filename(sprintf("P_globosa_water_overlay_scatterpie_K%02d_hfp.png", k))),
     plot = p,
     width = 10,
     height = 8,

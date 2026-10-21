@@ -13,7 +13,7 @@ repo_root <- normalizePath(file.path(script_dir, "..", ".."))
 source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 input_file <- file.path(repo_root, "data", "Table_3.csv")
-table_4_file <- file.path(repo_root, "data", "Table_4.csv")
+table_4_file <- Sys.getenv("PHYSARIA_TABLE_4_FILE", unset = file.path(repo_root, "data", "Table_4.csv"))
 output_dir <- file.path(repo_root, "figure", "Table_3")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 wen_lookup <- read_wen_label_lookup(repo_root)
@@ -163,7 +163,7 @@ metric_labels <- c(
 
 save_plot <- function(plot_obj, filename, width = 10, height = 7) {
   ggsave(
-    filename = file.path(output_dir, filename),
+    filename = file.path(output_dir, suffix_filename(filename)),
     plot = plot_obj,
     width = width,
     height = height,
@@ -568,5 +568,5 @@ p_all_scatter_four_panel <- cowplot::plot_grid(
 
 save_plot(p_all_scatter_four_panel, "Table_3_all_scatter_four_panel.png", width = 7, height = 7)
 
-readr::write_csv(population_tbl, file.path(output_dir, "Table_3_population_clean.csv"))
-readr::write_csv(average_tbl, file.path(output_dir, "Table_3_species_averages_clean.csv"))
+readr::write_csv(population_tbl, file.path(output_dir, suffix_filename("Table_3_population_clean.csv")))
+readr::write_csv(average_tbl, file.path(output_dir, suffix_filename("Table_3_species_averages_clean.csv")))

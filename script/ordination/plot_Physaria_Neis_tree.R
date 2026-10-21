@@ -17,7 +17,7 @@ input_file <- file.path(repo_root, "data", "Physaria_Neis.txt")
 output_dir <- file.path(repo_root, "figure", "Physaria_Neis_tree")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 wen_lookup <- read_wen_label_lookup(repo_root)
-tip_key_file <- file.path(output_dir, "Physaria_Neis_tip_label_key.csv")
+tip_key_file <- file.path(output_dir, suffix_filename("Physaria_Neis_tip_label_key.csv"))
 
 normalize_neis_label <- function(x) {
   case_when(
@@ -136,7 +136,7 @@ if (file.exists(tip_key_file)) {
 nj_tree$tip.label <- label_key$final_plot_label[match(nj_tree$tip.label, label_key$original_label)]
 
 png(
-  filename = file.path(output_dir, "Physaria_Neis_neighbor_joining_tree.png"),
+  filename = file.path(output_dir, suffix_filename("Physaria_Neis_neighbor_joining_tree.png")),
   width = 1800,
   height = 1200,
   res = 300
@@ -154,7 +154,7 @@ plot(
 add.scale.bar(length = 0.2, lwd = 1)
 dev.off()
 
-write.tree(nj_tree, file = file.path(output_dir, "Physaria_Neis_neighbor_joining_tree.nwk"))
+write.tree(nj_tree, file = file.path(output_dir, suffix_filename("Physaria_Neis_neighbor_joining_tree.nwk")))
 readr::write_csv(
   label_key %>% select(original_label, canonical_label, species, plot_label, Wen_plot_label, final_plot_label),
   tip_key_file
@@ -171,9 +171,9 @@ readr::write_csv(
     ),
     edge_length = nj_tree$edge.length
   ),
-  file.path(output_dir, "Physaria_Neis_tree_edge_lengths.csv")
+  file.path(output_dir, suffix_filename("Physaria_Neis_tree_edge_lengths.csv"))
 )
 readr::write_csv(
   as_tibble(dist_mat, rownames = "taxon"),
-  file.path(output_dir, "Physaria_Neis_matrix_parsed.csv")
+  file.path(output_dir, suffix_filename("Physaria_Neis_matrix_parsed.csv"))
 )

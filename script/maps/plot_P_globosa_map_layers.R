@@ -159,7 +159,7 @@ for (shape_file in shape_files) {
   )
 
   ggsave(
-    filename = file.path(output_dir, paste0(layer_name, ".png")),
+    filename = file.path(output_dir, suffix_filename(paste0(layer_name, ".png"))),
     plot = p,
     width = 10,
     height = 8,

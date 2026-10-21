@@ -119,7 +119,8 @@ offset_tbl <- tribble(
   "TNW_03", "Pgl360_TNW", 81983.0, 90000,
   "TNW_02", "Pgl361_TNW", 50000, 60000,
   "TNW_01", "Pgl362_TNW", -8547.2, 60000
-)
+) %>%
+  mutate(point_id = apply_wen_label_from_canonical(population_code, wen_lookup))
 
 state_sf <- ne_states(country = "United States of America", returnclass = "sf") %>%
   filter(postal %in% c("IN", "KY", "TN", "IL")) %>%
@@ -186,7 +187,7 @@ base_pie_radius <- min(
 ) * 0.028
 
 for (k in k_values) {
-  structure_file <- file.path(structure_dir, sprintf("STRUCTURE_K%02d_individual_mean.csv", k))
+  structure_file <- file.path(structure_dir, suffix_filename(sprintf("STRUCTURE_K%02d_individual_mean.csv", k)))
   structure_tbl <- read_structure_k(structure_file, k)
   cluster_cols <- paste0("cluster_", seq_len(k))
 
@@ -297,7 +298,7 @@ for (k in k_values) {
     )
 
   ggsave(
-    file.path(repo_root, "figure", sprintf("P_globosa_water_overlay_scatterpie_K%02d.png", k)),
+    file.path(repo_root, "figure", suffix_filename(sprintf("P_globosa_water_overlay_scatterpie_K%02d.png", k))),
     plot = p,
     width = 10,
     height = 8,

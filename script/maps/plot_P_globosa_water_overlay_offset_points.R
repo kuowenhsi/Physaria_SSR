@@ -22,7 +22,7 @@ source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 input_file <- file.path(repo_root, "data", "Table_1.csv")
 largewater_file <- file.path(repo_root, "data", "P_globosa_map", "P_glob_largewater.shp")
 smallwater_file <- file.path(repo_root, "data", "P_globosa_map", "P_glob_smallwater.shp")
-output_png <- file.path(repo_root, "figure", "P_globosa_water_overlay_offset_points.png")
+output_png <- file.path(repo_root, "figure", suffix_filename("P_globosa_water_overlay_offset_points.png"))
 wen_lookup <- read_wen_label_lookup(repo_root)
 
 read_table_1 <- function(path) {
@@ -111,7 +111,8 @@ offset_tbl <- tribble(
   "TNW_03", "Pgl360_TNW", 81983.0, 90000,
   "TNW_02", "Pgl361_TNW", 50000, 60000,
   "TNW_01", "Pgl362_TNW", -8547.2, 60000
-)
+) %>%
+  mutate(point_id = apply_wen_label_from_canonical(population_code, wen_lookup))
 
 state_sf <- ne_states(country = "United States of America", returnclass = "sf") %>%
   filter(postal %in% c("IN", "KY", "TN", "IL")) %>%

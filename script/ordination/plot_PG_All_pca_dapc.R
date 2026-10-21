@@ -285,7 +285,7 @@ plot_population_ordination <- function(scores, method, axis_labels, subtitle) {
 
 save_plot <- function(plot_obj, filename, width = 3.5, height = 3.5) {
   ggsave(
-    file.path(output_dir, filename),
+    file.path(output_dir, suffix_filename(filename)),
     plot = plot_obj,
     width = width,
     height = height,
@@ -349,4 +349,4 @@ save_plot(p_pca_pop, "PG_All_P_globosa_PCA_population.png")
 save_plot(p_dapc_ind, "PG_All_P_globosa_DAPC_individual.png")
 save_plot(p_dapc_pop, "PG_All_P_globosa_DAPC_population.png")
 
-readr::write_csv(parsed$metadata, file.path(output_dir, "PG_All_metadata_clean.csv"))
+readr::write_csv(parsed$metadata, file.path(output_dir, suffix_filename("PG_All_metadata_clean.csv")))

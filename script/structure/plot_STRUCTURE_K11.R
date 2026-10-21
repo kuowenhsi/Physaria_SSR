@@ -14,7 +14,7 @@ repo_root <- normalizePath(file.path(script_dir, "..", ".."))
 source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 input_file <- file.path(repo_root, "data", "coordsandadmixprpo.pglo.xlsx")
-output_png <- file.path(repo_root, "figure", "STRUCTURE_K11_barplot.png")
+output_png <- file.path(repo_root, "figure", suffix_filename("STRUCTURE_K11_barplot.png"))
 wen_lookup <- read_wen_label_lookup(repo_root)
 
 read_structure_k11 <- function(path) {

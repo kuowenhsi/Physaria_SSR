@@ -16,12 +16,13 @@ script_dir <- if (length(file_arg) > 0) {
   getwd()
 }
 repo_root <- normalizePath(file.path(script_dir, "..", ".."))
+source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 input_file <- file.path(repo_root, "data", "Table_1.csv")
 largewater_file <- file.path(repo_root, "data", "P_globosa_map", "P_glob_largewater.shp")
 smallwater_file <- file.path(repo_root, "data", "P_globosa_map", "P_glob_smallwater.shp")
-output_png <- file.path(repo_root, "figure", "P_globosa_water_overlay.png")
-output_png_points <- file.path(repo_root, "figure", "P_globosa_water_overlay_points.png")
+output_png <- file.path(repo_root, "figure", suffix_filename("P_globosa_water_overlay.png"))
+output_png_points <- file.path(repo_root, "figure", suffix_filename("P_globosa_water_overlay_points.png"))
 
 read_table_1 <- function(path) {
   raw_lines <- readr::read_lines(path)

@@ -3,7 +3,7 @@ library(clue)
 library(ggh4x)
 library(ggokabeito)
 
-# setwd("/Users/kuowenhsi/Library/CloudStorage/OneDrive-MissouriBotanicalGarden/General - IMLS National Leadership Grant 2023/Manuscript/Physaria_SSR/script")
+setwd("/Users/kuowenhsi/Library/CloudStorage/OneDrive-MissouriBotanicalGarden/General - IMLS National Leadership Grant 2023/Manuscript/Physaria_SSR/script")
 
 args <- commandArgs(trailingOnly = FALSE)
 file_arg <- grep("^--file=", args, value = TRUE)
@@ -14,7 +14,7 @@ script_dir <- if (length(file_arg) > 0) {
 } else {
   getwd()
 }
-repo_root <- normalizePath(file.path(script_dir, "..", ".."))
+repo_root <- normalizePath(file.path(script_dir, ".."))
 source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 structure_dir <- file.path(repo_root, "results", "structureHarvester")
@@ -33,7 +33,7 @@ read_sample_metadata <- function(path) {
       sample_id = map_chr(parts, 1),
       population = str_extract(sample_id, "Pg\\d+"),
       population_label = apply_wen_label_from_pg(population, wen_lookup),
-      state = case_when(
+      state_raw = case_when(
         population == "Pg346" ~ "IN",
         population %in% c("Pg347", "Pg349", "Pg350", "Pg351", "Pg352", "Pg354") ~ "KY",
         population %in% c("Pg348", "Pg353", "Pg355") ~ "EX-S",
@@ -41,6 +41,7 @@ read_sample_metadata <- function(path) {
         population %in% c("Pg358", "Pg359", "Pg360", "Pg361", "Pg362") ~ "TNW",
         TRUE ~ "Unknown"
       ),
+      state = apply_wen_group_from_pg(population, state_raw, wen_lookup),
       sample_order = row_number()
     ) %>%
     select(sample_id, population, population_label, state, sample_order)
@@ -113,7 +114,15 @@ align_and_average_runs <- function(ind_tbl, sample_meta, k, n_runs = 5) {
 }
 
 build_barplot <- function(avg_tbl, k) {
-  cluster_cols <- paste0("cluster_", seq_len(k))
+  cluster_cols <- if (k == 3){
+    paste0("cluster_", c(1,3,2))
+  } else if (k == 4){
+    paste0("cluster_", c(2,4,3,1))
+  } else if (k == 5){
+    paste0("cluster_", c(1,5,4,3,2))
+  } else{
+    paste0("cluster_", seq_len(k))
+  }
 
   population_levels <- avg_tbl %>%
     mutate(
@@ -155,7 +164,7 @@ build_barplot <- function(avg_tbl, k) {
       scales = "free_x",
       space = "free_x"
     ) +
-    scale_fill_manual(values = cluster_palette, name = "Cluster") +
+    ggokabeito::scale_fill_okabe_ito(name = "Cluster", drop = FALSE) +
     scale_y_continuous(
       limits = c(0, 1.001),
       breaks = seq(0, 1, by = 0.2),
@@ -183,7 +192,7 @@ build_barplot <- function(avg_tbl, k) {
 
 sample_meta <- read_sample_metadata(sample_file)
 
-for (k in 1:13) {
+for (k in 1:5) {
 
   ind_path <- file.path(structure_dir, paste0("K", k, ".indfile"))
   ind_tbl <- read_indfile(ind_path, k)
@@ -192,7 +201,7 @@ for (k in 1:13) {
   p
 
   ggsave(
-    file.path(output_dir, sprintf("STRUCTURE_K%02d_individual_mean.png", k)),
+    file.path(output_dir, suffix_filename(sprintf("STRUCTURE_K%02d_individual_mean.png", k))),
     plot = p,
     width = 7.25,
     height = 2,
@@ -201,7 +210,7 @@ for (k in 1:13) {
 
   readr::write_csv(
     avg_tbl,
-    file.path(output_dir, sprintf("STRUCTURE_K%02d_individual_mean.csv", k))
+    file.path(output_dir, suffix_filename(sprintf("STRUCTURE_K%02d_individual_mean.csv", k)))
   )
 }
 
@@ -282,15 +291,30 @@ build_multi_k_barplot <- function(avg_tbl_list, k_values) {
 
 k_values_combined <- 2:5
 avg_tbl_list_combined <- purrr::map(k_values_combined, function(k) {
+
   ind_path <- file.path(structure_dir, paste0("K", k, ".indfile"))
   ind_tbl <- read_indfile(ind_path, k)
-  align_and_average_runs(ind_tbl, sample_meta, k = k, n_runs = 5)
+  out <- align_and_average_runs(ind_tbl, sample_meta, k = k, n_runs = 5)
+  
+ if (k == 3){
+    colnames(out)[6:(6+k-1)] <- paste0("cluster_", c(1,3,2))
+  } else if (k == 4){
+    colnames(out)[6:(6+k-1)] <- paste0("cluster_", c(4,1,3,2))
+  } else if (k == 5){
+    colnames(out)[6:(6+k-1)] <- paste0("cluster_", c(1,5,4,3,2))
+  } else{
+    colnames(out)[6:(6+k-1)] <- paste0("cluster_", seq_len(k))
+  }
+  
+  return(out)
+
+  
 })
 
 p_multi_k <- build_multi_k_barplot(avg_tbl_list_combined, k_values_combined)
 
 ggsave(
-  file.path(output_dir, "STRUCTURE_K02_K05_individual_mean_combined.png"),
+  file.path(output_dir, suffix_filename("STRUCTURE_K02_K05_individual_mean_combined.png")),
   plot = p_multi_k,
   width = 7.25,
   height = 4,
@@ -309,7 +333,7 @@ avg_tbl_list_combined <- purrr::map(k_values_combined, function(k) {
 p_multi_k <- build_multi_k_barplot(avg_tbl_list_combined, k_values_combined)
 
 ggsave(
-  file.path(output_dir, "STRUCTURE_K02_K08_individual_mean_combined.png"),
+  file.path(output_dir, suffix_filename("STRUCTURE_K02_K08_individual_mean_combined.png")),
   plot = p_multi_k,
   width = 7.25,
   height = 8.5,

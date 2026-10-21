@@ -18,7 +18,7 @@ repo_root <- normalizePath(file.path(script_dir, "..", ".."))
 source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 input_file <- file.path(repo_root, "data", "Table_1.csv")
-output_png <- file.path(repo_root, "figure", "Table_1_map_natural_earth.png")
+output_png <- file.path(repo_root, "figure", suffix_filename("Table_1_map_natural_earth.png"))
 rivers_base_file <- file.path(
   repo_root,
   "data",

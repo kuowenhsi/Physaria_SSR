@@ -45,7 +45,7 @@ repo_root <- normalizePath(file.path(script_dir, "..", ".."), mustWork = FALSE)
 source(file.path(repo_root, "script", "utils", "utils_wen_labels.R"))
 
 input_file <- file.path(repo_root, "data", "Table_1.csv")
-output_png <- file.path(repo_root, "figure", "Table_1_map_globosa_boundaries_rivers.png")
+output_png <- file.path(repo_root, "figure", suffix_filename("Table_1_map_globosa_boundaries_rivers.png"))
 river_file <- file.path(
   "/Users/kuowenhsi/Library/CloudStorage/OneDrive-MissouriBotanicalGarden/General - IMLS National Leadership Grant 2023/GIS_material/Rivers/USA_Rivers_and_Streams-shp/9ae73184-d43c-4ab8-940a-c8687f61952f2020328-1-r9gw71.0odx9.shp"
 )
